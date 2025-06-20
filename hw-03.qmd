@@ -7,10 +7,114 @@ format:
 toc: true
 ---
 
+## Initial Setup
+
+```{r}
+#| label: Initial Setup
+
+if (!require("pacman")) 
+  install.packages("pacman")
+
+pacman::p_load(tidyverse,
+               janitor,
+               colorspace,
+               broom,
+               fs,
+               scales,
+               ggthemes,
+               ggrepel,
+               patchwork,
+               ggimage,
+               jpeg,
+               glue,
+               grid,
+               forcats)
+
+# set theme for ggplot2
+ggplot2::theme_set(ggplot2::theme_minimal(base_size = 14))
+
+# set width of code output
+options(width = 65)
+
+# set figure parameters for knitr
+knitr::opts_chunk$set(
+  fig.width = 7, # 7" width
+  fig.asp = 0.618, # the golden ratio
+  fig.retina = 3, # dpi multiplier for displaying HTML output on retina
+  fig.align = "center", # center align figures
+  dpi = 300 # higher dpi, sharper image
+)
+
+```
+
 ## 1 - Du Bois challenge.
 
 ```{r}
-#| label: label-me-1
+#| label: Du Bois Visualization
+
+# 1. Base data
+du_bois_income <- read_csv("data/income.csv")
+
+# 2. Pivot + cleanup with reversed category order
+du_bois_long <- du_bois_income |>
+  pivot_longer(cols = Rent:Other, names_to = "Category", values_to = "Expenditure") |>
+  mutate(
+    Category = fct_relevel(Category, "Rent", "Food", "Clothes", "Tax", "Other"),  # For legend order
+    Class = fct_rev(fct_inorder(Class))
+  ) |>
+  arrange(Class, desc(Category)) |>  # Reverse category order within each class
+  group_by(Class) |>
+  mutate(
+    CenterPos = cumsum(Expenditure) - 0.5 * Expenditure,  # Recalculate positions
+    Label = paste0(Expenditure, "%"),
+    LabelColor = ifelse(Category == "Rent", "white", "black")
+  ) |>
+  ungroup()
+
+# 3. Colors (match reference)
+colors <- c("Rent" = "black", "Food" = "purple", "Clothes" = "sienna1", "Tax" = "slategray1", "Other" = "snow2")
+
+# 4. Background image
+bg_path <- "images/du-bois-bg.jpg"
+bg <- jpeg::readJPEG(bg_path)
+bg_grob <- rasterGrob(bg, width = unit(1, "npc"), height = unit(1, "npc"), interpolate = TRUE)
+
+# 5. Final Plot
+ggplot(du_bois_long, aes(x = Class, y = Expenditure, fill = Category)) +
+  annotation_custom(bg_grob, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf) +
+  geom_col(width = 0.5, color = "white") +
+  geom_text(aes(y = CenterPos, label = Label, color = LabelColor),
+            size = 3, show.legend = FALSE, family = "mono") +
+  scale_color_identity() +
+  scale_fill_manual(values = colors, breaks = c("Rent", "Food", "Clothes", "Tax", "Other")) +
+  scale_x_discrete(labels = c("1,000     $1,125 \nAND OVER          ", "$750-1000   $880   ", "$500-750   $547   ", "$400-500   $433.82", "$300-400   $335.66", "$200-300   $249.45", "$100-200   $139.10")) +
+  coord_flip(clip = "off") +
+  labs(
+    x = NULL, y = NULL,
+    title = "INCOME AND EXPENDITURE OF 150 NEGRO FAMILIES IN ATLANTA, GA., U.S.A."
+  ) +
+  theme_minimal(base_family = "mono") +
+  theme(
+    legend.position = "top",
+    plot.title = element_text(face = "bold", size = 11, hjust = 0.5),
+    panel.grid = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_text(size = 7),
+    text = element_text(size = 9),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 9),
+    legend.key.size = unit(0.3, "cm")
+  ) +
+  annotate(
+    geom = "text",
+    x = "$100-200",
+    y = -0,
+    label = "CLASS    ACTUAL AVERAGE                                                                                  \n\n\n",
+    size = 2,
+    color = "black",
+    family = "mono",
+    hjust = 0
+  )
 
 ```
 
@@ -22,7 +126,6 @@ toc: true
 ```
 
 ## 3 - COVID survey - reconstruct
-
 
 ## 4 - COVID survey - re-reconstruct
 
