@@ -120,10 +120,29 @@ ggplot(du_bois_long, aes(x = Class, y = Expenditure, fill = Category)) +
 
 ## 2 - COVID survey - interpret
 
-```{r}
-#| label: label-me-2
+### Interpretation of the COVID-19 Vaccine Attitudes Visualization
 
-```
+This visualization is packed with information about how medical and nursing students across the U.S. feel about the COVID-19 vaccine. It’s a grid of facets where each column represents a different statement about the vaccine, rated on a Likert scale (1 = Strongly Agree to 5 = Strongly Disagree), and each row breaks down the responses by demographic factors like age, gender, race, profession, and vaccination status. The points show the mean score for each group, and the error bars stretch from the 10th to 90th percentiles, giving a sense of how much opinions vary. The first row, labeled "All," shows the overall responses without splitting by any demographic factors.
+
+#### Overall Observations
+
+Starting with the "All" row, it’s cool to see that most students lean toward positive views about the vaccine. For statements like "I believe the vaccine is safe," "Getting the vaccine will make me feel safer at work," and "I will recommend the vaccine to others," the mean scores hover around 1.5 to 2, which means they’re generally agreeing—either strongly or somewhat. That feels right to me since these are future healthcare pros who probably trust science. But then, for "I am concerned about the safety and side effects of the vaccine," the mean jumps to about 3 (neutral), and the error bars go from like 1.5 to 4.5. So, even though they trust the vaccine, a lot of them are still worried about side effects, which I get because it was developed so fast.
+
+#### Example 1: Asian Respondents’ Mixed Feelings
+
+One thing that caught my eye was in the "Race" category with Asian students. For "I believe the vaccine is safe," the error bars are huge—like, they go from 1 to 5! That means some strongly agree it’s safe, while others totally disagree, which is wild variation. I didn’t expect that much difference within one group. But then, for "I will recommend the vaccine to others," the mean is around 2, and the error bars are way tighter, maybe 1 to 3. That’s weird to me—if you’re all over the place on safety, I’d think you’d be unsure about recommending it too. Maybe they feel they *should* promote it, even if they’re not totally sold on it themselves, like it’s their duty or something during a pandemic.
+
+#### Example 2: Nursing vs. Medical Students
+
+Looking at the "Profession" row, I noticed nursing and medical students don’t line up as much as I thought they would. For stuff like "I trust the information I have received," nursing students have tight error bars, maybe 1 to 2.5, so they’re pretty consistent. Medical students, though, have wider ones, like 1 to 4, showing more mixed opinions. I figured both groups would think alike since they’re both in healthcare and learning the same science. This makes me wonder if medical students are more skeptical because they’re digging into research more, while nursing students might just go with what they’re taught. It’s not what I expected!
+
+#### Example 3: Vaccinated Students Still Worried
+
+In the "Had COVID vaccine" row, students who said "Yes" to being vaccinated have means around 1 to 1.5 for positive statements like "I believe the vaccine is safe," which makes sense—if you got it, you probably trust it. But for "I am concerned about side effects," the mean is still around 3, with error bars from 1.5 to 4.5. That’s interesting because I thought if you’re vaccinated, you’d be less worried. It shows even people who took it aren’t totally chill about risks, which fits with how some might’ve gotten it for school or work but still have doubts about a new vaccine.
+
+#### Wrapping Up
+
+This plot shows that medical and nursing students mostly trust the COVID-19 vaccine, but they’re not all-in—side effect worries are real across the board. The differences between groups, like race or profession, add layers I didn’t expect, making it clear that even future doctors and nurses don’t all see it the same way. It’s pretty fascinating how complicated their views are!
 
 ## 3 - COVID survey - reconstruct
 
