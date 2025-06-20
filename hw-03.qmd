@@ -419,7 +419,7 @@ covid_survey_summary_stats_2 <- covid_survey_summary_stats_2 |>
 covid_survey_summary_stats_2 |>
   ggplot(aes(x = mean, y = factor(explanatory_value))) +
   geom_point(size = 0.75) +
-  geom_errorbarh(aes(xmin = low, xmax = high), height = 0.3) +
+  geom_errorbarh(aes(xmin = low, xmax = high), height = 0.5) +
   facet_grid(
     rows = vars(explanatory),
     cols = vars(response),
@@ -445,5 +445,12 @@ covid_survey_summary_stats_2 |>
   )
 
 ```
+
+\
+This plot differs quite a bit from the one in question 3 because the error bars now reflect the 25th to 75th percentiles (interquartile range) instead of the 10th to 90th percentiles, shrinking the range by 50 percentiles overall. This change makes the error bars much tighter around the mean Likert scores, giving a clearer picture of where most responses cluster rather than the full spread. It’s especially noticeable in columns like “I believe the vaccine is safe” and “I am concerned about side effects,” where the error bars are now more concentrated, even when broken down by factors like age or race. Comparing this to the previous plot feels like switching from a wide scatter to something closer to a box plot, showing the middle 50% of responses more clearly.
+
+One cool thing that stands out is that non-binary third gender respondents’ error bar for “I believe the vaccine is safe” looks pretty similar to before, still hovering around a neutral mean with a tight range. This might suggest a small sample size, which could explain the lack of change. Another new observation is that for “Had COVID vaccine” (Yes vs. No), the “Yes” group shows a tight error bar around 1-2 for “I will recommend the vaccine,” indicating strong agreement, while the “No” group spreads wider toward 3-4, showing more uncertainty. I didn’t expect that big a difference—maybe those who didn’t get it are less confident in pushing it on others.
+
+Overall, the shorter error bars suggest the data is more clustered between the 25th and 75th percentiles, which aligns with the Central Limit Theorem—larger sample sizes (likely over 30 here) tend to push distributions toward normal. This tighter focus helps me see that most medical and nursing students are pretty consistent in their views, especially on trust and recommendation, even if some worry about side effects.
 
 ## 5 - COVID survey - another view
