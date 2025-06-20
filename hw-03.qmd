@@ -146,6 +146,304 @@ This plot shows that medical and nursing students mostly trust the COVID-19 vacc
 
 ## 3 - COVID survey - reconstruct
 
+```{r}
+#| label: Loading data for Covid survey visualization
+
+# Loading Data
+
+covid_check <- read.csv("data/covid-survey.csv")
+#head(covid)
+
+# After watching the head of the data set we need to remove the first row which just says this - 'likert_survey' And doesn't have actual data
+
+covid <- read.csv("data/covid-survey.csv", skip = 1)
+
+dim(covid)
+```
+
+```{r}
+#| label: Here sipping Unnecessary Starting Row from Data set
+
+# I would have add [na = c(".", "")] during loading data but just to follow along the step doing it separatly below.
+covid_filtered_na <- covid |>
+  mutate(across(-response_id, ~ na_if(trimws(.), ""))) |>
+  mutate(across(-response_id, ~ na_if(., "."))) |>
+  filter(if_any(-response_id, ~ !is.na(.)))
+
+dim(covid_filtered_na)
+
+
+```
+
+```{r}
+#| label: Adding appropriate labels to the explantory variables
+
+# Updating Labels
+covid_relabeled <- covid_filtered_na |>
+  mutate(
+    exp_already_vax = recode(exp_already_vax, `0` = "No", `1` = "Yes"),
+    exp_flu_vax = recode(exp_flu_vax, `0` = "No", `1` = "Yes"),
+    exp_profession = recode(exp_profession, `0` = "Medical", `1` = "Nursing"),
+    exp_gender = recode(exp_gender,
+                        `0` = "Male",
+                        `1` = "Female",
+                        `3` = "Non-binary third gender",
+                        `4` = "Prefer not to say"),
+    exp_race = recode(exp_race,
+                      `1` = "American Indian / Alaskan Native",
+                      `2` = "Asian",
+                      `3` = "Black / African American",
+                      `4` = "Native Hawaiian / Other Pacific Islander",
+                      `5` = "White"),
+    exp_ethnicity = recode(exp_ethnicity,
+                           `1` = "Hispanic / Latino",
+                           `2` = "Non-Hispanic / Non-Latino"),
+    exp_age_bin = recode(exp_age_bin,
+                         `0` = "<20",
+                         `20` = "21–25",
+                         `25` = "26–30",
+                         `30` = ">30")
+  )
+
+dim(covid_relabeled)
+
+
+```
+
+```{r}
+#| label: Pivoting the columns
+
+covid_survey_longer <- covid_relabeled |>
+
+# This pivot longer combines all explanatory columns and their values into two columns. Pivoting multiple columns of data into two columns to be able to address easily while plotting.
+
+  pivot_longer(
+    cols = starts_with("exp_"),
+    names_to = "explanatory",
+    values_to = "explanatory_value"
+  ) |>
+  filter(!is.na(explanatory_value)) |>
+
+# This pivot longer combines all response value columns into and their values into two columns. Similar to the above one it will also help in plotting the data.
+
+  pivot_longer(
+    cols = starts_with("resp_"),
+    names_to = "response",
+    values_to = "response_value"
+  )
+
+covid_survey_longer
+
+covid_survey_longer |>
+  distinct(explanatory_value)
+```
+
+```{r}
+#| label: Calculating Summary Statistics by Group
+
+covid_survey_longer <- covid_survey_longer |>
+  mutate(response_value = as.numeric(response_value))
+
+covid_survey_summary_stats_by_group <- covid_survey_longer |>
+  group_by(explanatory, explanatory_value, response) |>
+  summarise(
+    mean = mean(response_value, na.rm = TRUE),
+    low = quantile(response_value, 0.1, na.rm = TRUE),
+    high = quantile(response_value, 0.9, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+covid_survey_summary_stats_by_group
+
+
+
+```
+
+```{r}
+#| label: Summarizing Stats and binding rows for Visualization
+
+covid_survey_summary_stats_all <- covid_survey_longer |>
+  group_by(response) |>
+  summarise(
+    mean = mean(response_value, na.rm = TRUE),
+    low = quantile(response_value, 0.1, na.rm = TRUE),
+    high = quantile(response_value, 0.9, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  mutate(
+    explanatory = "All",
+    explanatory_value = ""
+  )
+
+covid_survey_summary_stats_all
+
+# checking distint values to see if all variable values are coming
+covid_survey_summary_stats_all |>
+  distinct(explanatory_value)
+
+# Binding the rows
+
+covid_survey_summary_stats <- bind_rows(
+  covid_survey_summary_stats_all,
+  covid_survey_summary_stats_by_group
+)
+
+
+covid_survey_summary_stats
+
+
+```
+
+```{r}
+#| label: Relevels factors, Set Labels, and Create Plot
+
+# Relevel factors
+covid_survey_summary_stats <- covid_survey_summary_stats |>
+  mutate(
+    explanatory_value = fct_relevel(explanatory_value, ">30", "26-30", "21-25", "<20"),
+    explanatory = fct_relevel(explanatory, "All", "exp_age_bin", "exp_gender", "exp_race", "exp_ethnicity", "exp_profession", "exp_already_vax", "exp_flu_vax"),
+    explanatory_value = fct_relevel(explanatory_value, "Male", "Female", "Non-binary third gender", "Prefer not to say"),
+    explanatory_value = fct_relevel(explanatory_value, "American Indian/Alaskan Native", "Asian", "Black/African American", "Native Hawaiian/Other Pacific Islander", "White"),
+    explanatory_value = fct_relevel(explanatory_value, "Non-Hispanic/Non-Latino", "Hispanic/Latino"),
+    explanatory_value = fct_relevel(explanatory_value, "Medical", "Nursing"),
+    explanatory_value = fct_relevel(explanatory_value, "No", "Yes")
+  )
+
+# Set labels
+covid_survey_summary_stats <- covid_survey_summary_stats |>
+  mutate(
+    explanatory = recode(explanatory, "exp_age_bin" = 'Age', "exp_gender" = 'Gender', "exp_race" = 'Race', "exp_ethnicity" = 'Ethnicity', "exp_profession" = 'Profession', "exp_already_vax" = 'Had COVID vaccine', "exp_flu_vax" = 'Had flu vaccine this year'),
+    response = fct_relevel(response, "resp_safety", "resp_feel_safe_at_work", "resp_concern_safety", "resp_confidence_science",   "resp_trust_info", "resp_will_recommend"),
+    response = recode(response,
+                      "resp_safety" = 'Based on my understanding, I believe the vaccine is safe',
+                      "resp_confidence_science" = 'I am confident in the scientific vetting process for the new COVID vaccines',
+                      "resp_feel_safe_at_work" = 'Getting the vaccine will make me feel safer at work',
+                      "resp_will_recommend" = 'I will recommend the vaccine to family, friends, and community members',
+                      "resp_trust_info" = 'I trust the information that I have received about the vaccines',
+                      "resp_concern_safety" = 'I am concerned about the safety and side effects of the vaccine')
+  )
+
+# Creating the plot
+covid_survey_summary_stats |>
+  ggplot(aes(x = mean, y = factor(explanatory_value))) +
+  geom_point(size = 0.75) +
+  geom_errorbarh(aes(xmin = low, xmax = high), height = 0.3) +
+  facet_grid(
+    rows = vars(explanatory),
+    cols = vars(response),
+    scales = "free_y",
+    space = "free_y",
+    labeller = labeller(explanatory = label_wrap_gen(15), response = label_wrap_gen(15))
+  ) +
+  scale_x_continuous(breaks = 1:5) +
+  labs(
+    x = "Mean Likert score\n(Error bars range from 10th to 90th percentile)",
+    y = NULL,
+  ) +
+  theme(
+    strip.text = element_text(size = 6),
+    strip.text.y = element_text(angle = 0),
+    axis.text.y = element_text(size = 6),
+    axis.text.x = element_text(size = 6),
+    panel.spacing = unit(0, "lines"),
+    panel.spacing.x = unit(0.3, "lines"),
+    axis.title.x = element_text(size = 8),
+    panel.grid = element_blank(),
+    strip.background = element_rect(fill = "gray90", color = "black")
+  )
+```
+
 ## 4 - COVID survey - re-reconstruct
+
+```{r}
+
+# Calculating summary statistics for identity groups
+covid_survey_summary_stats_by_group_2 <- covid_survey_longer |>
+  group_by(explanatory, explanatory_value, response) |>
+  summarise(
+    mean = mean(response_value, na.rm = TRUE),
+    low = quantile(response_value, 0.25, na.rm = TRUE),
+    high = quantile(response_value, 0.75, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Calculating summary statistics for all
+covid_survey_summary_stats_all_2 <- covid_survey_longer |>
+  group_by(response) |>
+  summarise(
+    mean = mean(response_value, na.rm = TRUE),
+    low = quantile(response_value, 0.25, na.rm = TRUE),
+    high = quantile(response_value, 0.75, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  mutate(
+    explanatory = "All",
+    explanatory_value = ""
+  )
+
+# Binding the rows
+covid_survey_summary_stats_2 <- bind_rows(
+  covid_survey_summary_stats_all_2,
+  covid_survey_summary_stats_by_group_2
+)
+
+# Relevels factors, Set Labels, and Create Plot
+
+# Relevel factors
+covid_survey_summary_stats_2 <- covid_survey_summary_stats_2 |>
+  mutate(
+    explanatory_value = fct_relevel(explanatory_value, ">30", "26-30", "21-25", "<20"),
+    explanatory = fct_relevel(explanatory, "All", "exp_age_bin", "exp_gender", "exp_race", "exp_ethnicity", "exp_profession", "exp_already_vax", "exp_flu_vax"),
+    explanatory_value = fct_relevel(explanatory_value, "Male", "Female", "Non-binary third gender", "Prefer not to say"),
+    explanatory_value = fct_relevel(explanatory_value, "American Indian/Alaskan Native", "Asian", "Black/African American", "Native Hawaiian/Other Pacific Islander", "White"),
+    explanatory_value = fct_relevel(explanatory_value, "Non-Hispanic/Non-Latino", "Hispanic/Latino"),
+    explanatory_value = fct_relevel(explanatory_value, "Medical", "Nursing"),
+    explanatory_value = fct_relevel(explanatory_value, "No", "Yes")
+  )
+
+# Set labels
+covid_survey_summary_stats_2 <- covid_survey_summary_stats_2 |>
+  mutate(
+    explanatory = recode(explanatory, "exp_age_bin" = 'Age', "exp_gender" = 'Gender', "exp_race" = 'Race', "exp_ethnicity" = 'Ethnicity', "exp_profession" = 'Profession', "exp_already_vax" = 'Had COVID vaccine', "exp_flu_vax" = 'Had flu vaccine this year'),
+    response = fct_relevel(response, "resp_safety", "resp_feel_safe_at_work", "resp_concern_safety", "resp_confidence_science",   "resp_trust_info", "resp_will_recommend"),
+    response = recode(response,
+                      "resp_safety" = 'Based on my understanding, I believe the vaccine is safe',
+                      "resp_confidence_science" = 'I am confident in the scientific vetting process for the new COVID vaccines',
+                      "resp_feel_safe_at_work" = 'Getting the vaccine will make me feel safer at work',
+                      "resp_will_recommend" = 'I will recommend the vaccine to family, friends, and community members',
+                      "resp_trust_info" = 'I trust the information that I have received about the vaccines',
+                      "resp_concern_safety" = 'I am concerned about the safety and side effects of the vaccine')
+  )
+
+# Creating the plot
+covid_survey_summary_stats_2 |>
+  ggplot(aes(x = mean, y = factor(explanatory_value))) +
+  geom_point(size = 0.75) +
+  geom_errorbarh(aes(xmin = low, xmax = high), height = 0.3) +
+  facet_grid(
+    rows = vars(explanatory),
+    cols = vars(response),
+    scales = "free_y",
+    space = "free_y",
+    labeller = labeller(explanatory = label_wrap_gen(15), response = label_wrap_gen(15))
+  ) +
+  scale_x_continuous(breaks = 1:5) +
+  labs(
+    x = "Mean Likert score\n(Error bars range from 25th to 75th percentile)",
+    y = NULL,
+  ) +
+  theme(
+    strip.text = element_text(size = 6),
+    strip.text.y = element_text(angle = 0),
+    axis.text.y = element_text(size = 6),
+    axis.text.x = element_text(size = 6),
+    panel.spacing = unit(0, "lines"),
+    panel.spacing.x = unit(0.3, "lines"),
+    axis.title.x = element_text(size = 8),
+    panel.grid = element_blank(),
+    strip.background = element_rect(fill = "gray90", color = "black")
+  )
+
+```
 
 ## 5 - COVID survey - another view
