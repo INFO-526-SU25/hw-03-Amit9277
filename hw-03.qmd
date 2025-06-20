@@ -1,6 +1,6 @@
 ---
 title: "HW 03"
-author: "INSERT YOUR NAME HERE"
+author: "Amit Chawla"
 format:
   html:
     embed-resources: true
