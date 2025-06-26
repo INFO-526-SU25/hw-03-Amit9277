@@ -96,7 +96,7 @@ ggplot(du_bois_long, aes(x = Class, y = Expenditure, fill = Category)) +
             size = 3, show.legend = FALSE, family = "mono") +
   scale_color_identity() +
   scale_fill_manual(values = colors, breaks = c("Rent", "Food", "Clothes", "Tax", "Other")) +
-  scale_x_discrete(labels = c("1,000     $1,125 \nAND OVER          ", "$750-1000   $880   ", "$500-750   $547   ", "$400-500   $433.82", "$300-400   $335.66", "$200-300   $249.45", "$100-200   $139.10")) +
+  scale_x_discrete(labels = c("1,000     $1,125 \nAND OVER          ", "$750-1000   $880   ", "$500-750   $547   ", "$400-500   $433.82", "$300-400   $335.66", "$200-300   $249.45", "Class     Actual\nAverage\n\n$100-200   $139.10\n\n\n")) +
   coord_flip(clip = "off") +
   labs(
     x = NULL, y = NULL,
@@ -113,16 +113,6 @@ ggplot(du_bois_long, aes(x = Class, y = Expenditure, fill = Category)) +
     legend.title = element_blank(),
     legend.text = element_text(size = 9),
     legend.key.size = unit(0.3, "cm")
-  ) +
-  annotate(
-    geom = "text",
-    x = "$100-200",
-    y = -0,
-    label = "CLASS    ACTUAL AVERAGE                                                                                  \n\n\n",
-    size = 2,
-    color = "black",
-    family = "mono",
-    hjust = 0
   )
 
 ```
@@ -555,7 +545,7 @@ ggplot(covid_survey_summary, aes(
     subtitle = "Likert scale from strongly disagree to strongly agree",
     caption = "Source: Shah et al., Johns Hopkins School of Medicine"
   ) +
-  scale_x_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(breaks = seq(0, 100, by = 25), labels = scales::percent_format(scale = 1)) +
   scale_y_discrete(labels = function(x) str_wrap(x, width = 35)) +
   guides(fill = guide_legend(reverse = TRUE)) +
   theme_minimal() +
@@ -571,13 +561,11 @@ ggplot(covid_survey_summary, aes(
     legend.key.size = unit(0.3, "cm")
   )
 
-
-# Note: I tried to reverse the plot bar but couldn't do it, not sure what's that thing I'm missing.
-
-# I was able to resolve my issue with reversing the order using fct_rev on response_value
-
-
 ```
+
+**Note:** I tried to reverse the plot bar but couldn't do it, not sure what's that thing I'm missing.
+
+I was able to resolve my issue with reversing the order using `fct_rev` on `response_value`
 
 ### Alt Text
 
@@ -585,17 +573,15 @@ This stacked bar plot, titled "Majority of students confident about the safety o
 
 The data reveals a high level of agreement among students for several key statements:
 
--   Around **90% to 92%** of students either strongly or somewhat agreed with the following:
+Around **90% to 92%** of students either strongly or somewhat agreed with the following:
 
-```         
--    "I will recommend the vaccine to family, friends, and community members."
+-   "I will recommend the vaccine to family, friends, and community members."
 
--    "I trust the information that I have received about the vaccines."
+-   "I trust the information that I have received about the vaccines."
 
--    "I am confident in the scientific vetting process for the new COVID vaccines."
+-   "I am confident in the scientific vetting process for the new COVID vaccines."
 
--    "Getting the vaccine will make me feel safer at work."
-```
+-   "Getting the vaccine will make me feel safer at work."
 
 However, agreement was slightly lower for the statement, "Based on my understanding, I believe the vaccine is safe," coming in at approximately **75%**.
 
