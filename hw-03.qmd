@@ -100,7 +100,7 @@ ggplot(du_bois_long, aes(x = Class, y = Expenditure, fill = Category)) +
   coord_flip(clip = "off") +
   labs(
     x = NULL, y = NULL,
-    title = "INCOME AND EXPENDITURE OF 150 NEGRO FAMILIES IN ATLANTA, GA., U.S.A."
+    title = "INCOME AND EXPENDITURE OF 150 NEGRO FAMILIES \n IN ATLANTA, GA., U.S.A."
   ) +
   theme_minimal(base_family = "mono") +
   theme(
@@ -516,7 +516,7 @@ covid_survey_summary <- covid_survey_clean |>
 
 # Define colors matching the description
 colors <- c("Strongly Agree" = "pink", "Agree" = "lightblue",
-            "Neutral" = "green", "Disagree" = "yellow",
+            "Neutral" = "grey", "Disagree" = "yellow",
             "Strongly Disagree" = "orange")
 
 covid_survey_summary <- covid_survey_summary |>
@@ -527,10 +527,46 @@ covid_survey_summary <- covid_survey_summary |>
     Category = fct_relevel(response_value, "Strongly Agree", "Agree", "Neutral", "Disagree", "Strongly Disagree"),  # For legend order
   )
 
-head(covid_survey_summary)
+# Fixing the order of
+covid_survey_summary_diverging <- covid_survey_summary |>
+  mutate(response_value = factor(response_value, levels = c(
+    "Strongly Disagree", "Disagree", "Strongly Agree", "Agree", "Neutral"
+  )))
 
-# Create the plot
-ggplot(covid_survey_summary, aes(
+# Assign polarity to responses
+covid_survey_summary_diverging <- covid_survey_summary_diverging |>
+  mutate(
+    percent_signed = case_when(
+      response_value %in% c("Agree", "Strongly Agree") ~ percent,  # Positive side
+      response_value == "Neutral" ~ percent,                       # Center
+      TRUE ~ -percent                                              # Negative side
+    )
+  )
+
+
+# Plot diverging bar chart
+plot_diverging <- ggplot(covid_survey_summary_diverging, aes(x = response, y = percent_signed, fill = response_value)) +
+  geom_col(width = 0.7) +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(-75, 100, by = 25), labels = scales::percent_format(scale = 1)) +
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 35)) +
+  scale_fill_manual(values = colors) +
+  labs(
+    x = NULL,
+    y = "Percentage",
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(face = "bold", size = 11, hjust = 0.3),
+    panel.grid = element_blank(),
+    axis.text.x = element_text(size = 7),
+    axis.text.y = element_text(size = 7),
+    text = element_text(size = 9),
+  )
+
+# Plot 100% bar chart
+plot_100 <- ggplot(covid_survey_summary, aes(
   x = percent,
   y = response,
   fill = response_value
@@ -539,27 +575,47 @@ ggplot(covid_survey_summary, aes(
   scale_fill_manual(values = colors) +
   labs(
     x = "Percentage",
-    y = NULL,
-    fill = "Response",
-    title = "Majority of students confident about \n the safety of the COVID-19 vaccine",
-    subtitle = "Likert scale from strongly disagree to strongly agree",
-    caption = "Source: Shah et al., Johns Hopkins School of Medicine"
+    y = NULL
   ) +
   scale_x_continuous(breaks = seq(0, 100, by = 25), labels = scales::percent_format(scale = 1)) +
   scale_y_discrete(labels = function(x) str_wrap(x, width = 35)) +
-  guides(fill = guide_legend(reverse = TRUE)) +
   theme_minimal() +
   theme(
-    legend.position = "top",
-    plot.title = element_text(face = "bold", size = 11, hjust = 0.5),
+    legend.position = "none",
+    plot.title = element_text(face = "bold", size = 11, hjust = 0.3),
     panel.grid = element_blank(),
-    axis.text.x = element_blank(),
-    axis.text.y = element_text(size = 7),
+    axis.text.x = element_text(size = 7),
+    axis.text.y = element_blank(),
     text = element_text(size = 9),
+  )
+
+
+combined_plot <- plot_diverging + plot_100 +
+  plot_layout(ncol = 2, widths = c(1, 1)) +  # adjust widths if needed
+  plot_annotation(
+    title = "Majority of students confident about \n the safety of the COVID-19 vaccine",
+    subtitle = paste0(
+      strrep("\u2003", 10),  # 5 em spaces for more indentation
+      "Likert scale from strongly disagree to strongly agree\n",
+      strrep("\u2003", 10),
+      "with 100% bar plot and Diverging bar plot"
+    ),
+    caption = "Source: Shah et al., Johns Hopkins School of Medicine",
+    theme = theme(
+      plot.title = element_text(face = "bold", size = 11, hjust = 0.3),
+      plot.subtitle = element_text(size = 9),
+      plot.caption = element_text(size = 8)
+    )
+  ) +
+  theme(
+    legend.position = "top",
     legend.title = element_blank(),
     legend.text = element_text(size = 9),
     legend.key.size = unit(0.3, "cm")
-  )
+  ) +
+  guides(fill = guide_legend(reverse = TRUE))  # Global legend
+
+print(combined_plot)
 
 ```
 
@@ -569,7 +625,7 @@ I was able to resolve my issue with reversing the order using `fct_rev` on `res
 
 ### Alt Text
 
-This stacked bar plot, titled "Majority of students confident about the safety of the COVID-19 vaccine," illustrates student perceptions of the COVID-19 vaccine across six different statements. The responses are based on a Likert scale where 1 signifies strong agreement and 5 indicates strong disagreement.
+This stacked 100% bar plot, titled "Majority of students confident about the safety of the COVID-19 vaccine," illustrates student perceptions of the COVID-19 vaccine across six different statements. The responses are based on a Likert scale where 1 signifies strong agreement and 5 indicates strong disagreement.
 
 The data reveals a high level of agreement among students for several key statements:
 
@@ -587,4 +643,34 @@ However, agreement was slightly lower for the statement, "Based on my understand
 
 Conversely, when asked about concerns regarding vaccine safety and side effects ("I am concerned about the safety and side effects of the vaccine"), only about **35%** of students expressed agreement, while **55%** disagreed.
 
+This diverging bar plot, aptly titled "Majority of students confident about the safety of the COVID-19 vaccine," illustrates student perceptions of the COVID-19 vaccine and its safety. The plot displays responses to six statements, measured on a Likert scale where **1 represents strong agreement and 5 represents strong disagreement**.
+
+The statements assessed are:
+
+-   "Based on my understanding, I believe the vaccine is safe."
+
+-   "I am confident in the scientific vetting process for the new COVID vaccines."
+
+-   "Getting the vaccine will make me feel safer at work."
+
+-   "I will recommend the vaccine to family, friends, and community members."
+
+-   "I trust the information that I have received about the vaccines."
+
+-   "I am concerned about the safety and side effects of the vaccine."
+
+Overall, the plot reveals a clear trend: the surveyed students generally **agree with the positively phrased statements**. Conversely, for the inversely phrased statement, "I am concerned about the safety and side effects of the vaccine," the trend is indirect, meaning students largely **disagree** with this concern, further reinforcing their confidence in vaccine safety.
+
 This data was collected by Shah et al. from Johns Hopkins School of Medicine.
+
+### Plot Comparison
+
+These plots tell a consistent story, even though they present the information differently. Both visualizations clearly show that most student respondents in the survey were confident about the vaccine's safety. We can see this in the **high levels of strong agreement** with the five positively worded statements and a **moderate level of disagreement** with the single negatively worded statement.
+
+#### Understanding the Differences in Detail
+
+While both plots convey the same overarching message, they each offer unique insights:
+
+The **diverging bar plot** excels at highlighting the distinction between agreement and disagreement. Its design, diverging from a central neutral point, makes it easy to visually compare the proportion of "agree" responses versus "disagree" responses for each statement.
+
+In contrast, the **stacked bar plot** provides a more detailed look at the full **distribution of Likert scale responses** (from 1 to 5) for each of the six statements. This allows us to compare how responses are spread across the entire scale for each statement relative to the others. For instance, this detailed distribution reveals an interesting point: the agreement levels for the statement, "Based on my understanding, I believe the vaccine is safe," don't quite follow the same strong trend as the other positively framed statements, showing somewhat less overall agreement.
